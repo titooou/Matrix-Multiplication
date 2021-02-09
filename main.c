@@ -10,8 +10,6 @@
 #include "calcul.h"
 #include "ThreadCalcul.h"
 
-
-
 /*Creation of blocksize structur*/
 typedef struct blocksize{
 						int n;
@@ -46,8 +44,8 @@ int main(int argc, char **argv){
 	
 	//declaration of variables
 	int       i,j;
-	clock_t   debut,fin;
-	double    temps;
+	clock_t  start,end;
+	double    time;
 	
 	char *    Mode      =  argv[1]; 	// chosen mode  		
 	int 	  n         =  atoi (argv[2]);  // Matrix size
@@ -58,7 +56,7 @@ int main(int argc, char **argv){
 	sqrto=sqrt((double)NBTHREAD);
     sqrta=sqrto;
     NBRTHREAD=sqrta*sqrta;
-	/*Allocation et initialisation des matrices*/
+	/***********************Creating matrix A & B **********************************************/
 	int **A = (int **)malloc(n * sizeof(int *));
 	for (i = 0; i < n; i++)
 		A[i] = (int *)malloc(n * sizeof(int));
@@ -84,7 +82,7 @@ int main(int argc, char **argv){
 	for (i = 0; i < n; i++)
 		D[i] = (int *)malloc(n * sizeof(int));
 	
-	/*Argement pour passage des paramtres*/
+	/************************  Set up argements ********************************************/
 	blocksize Arg;
 	Arg.NbrThreads = NBRTHREAD ;
 	Arg.n = n;
@@ -107,23 +105,23 @@ int main(int argc, char **argv){
 	
 	if((!strcmp(Mode,"S"))||(!strcmp(Mode,"s"))){
 		printf("Sequential execution : \n");
-		debut = clock();
+	start = clock();
 		MultiplicationMatrix(A,B,n);
-		fin = clock();
-		temps = ((double)fin - debut) / CLOCKS_PER_SEC; //Calcul le temps d'execution pour le mode sequential
-		printf("Execution time : %f\n",temps);
+		end = clock();
+		time = ((double)end -start) / CLOCKS_PER_SEC; //Calculate execution time of sequential mode 
+		printf("Execution time : %f\n",time);
 		return 0;
 	} 
 	else if ((!strcmp(Mode,"P"))||(!strcmp(Mode,"p"))){ 
 		printf("Parallel Execution Row : \n");
-		debut = clock();
+	start = clock();
 		
-		/*Creation des threads*/
+		/*Creation of threads*/
 		pthread_t *threads = (pthread_t*) malloc(sizeof(pthread_t) * NBRTHREAD);
 		for(i=0; i<NBRTHREAD; i++){ 
 			Arg.istart = i * Arg.taille;
 			Arg.iend = Arg.istart + Arg.taille-1 + Arg.reste;
-			debut = clock();
+		start = clock();
 			if(pthread_create(&threads[i], NULL,Mult_vectorielle,&Arg)){ 
 				fprintf(stderr, "inable to create thread \n");
 				return 1;
@@ -136,13 +134,13 @@ int main(int argc, char **argv){
 		}
 		
 		printMatrix(Arg.C,Arg.n);
-		fin = clock();
-		temps = ((double)fin - debut) / CLOCKS_PER_SEC; // Calculatio of parralel execution time 
-		printf("\nExecution time : %f \n",temps);
+		end = clock();
+		time = ((double)end -start) / CLOCKS_PER_SEC; // calculate execution time for parallel mode
+		printf("\nExecution time : %f \n",time);
 		printf("\n\n\n");
 				
 		printf("Parallel execution block : \n");
-		debut = clock();
+	start = clock();
 		pthread_t *threads2 = (pthread_t*) malloc(sizeof(pthread_t) * NBRTHREAD);
 		for(i=0; i<NBRTHREAD; i++){ 
 			block.istart = (i/(int)sqrt(NBRTHREAD)) * block.taille;
@@ -154,7 +152,7 @@ int main(int argc, char **argv){
 				block.jstart = (i % (int)sqrt(NBRTHREAD)) * block.taille;
 				block.jend   = block.jstart + block.taille -1 + block.reste;
 			}
-			//debut = clock();
+			
 			if(pthread_create(&threads2[i], NULL,Mult_Matricielle,&block)){ 
 				fprintf(stderr, "inable to create thread\n");
 				return 3;
@@ -166,9 +164,9 @@ int main(int argc, char **argv){
 		} 		
 	}
 			printMatrix(block.C,block.n);
-			fin = clock();
-			temps = ((double)fin - debut) / CLOCKS_PER_SEC; //calcul execution time for block in parallel mode
-			printf("\nExecution Time  : %f \n",temps);
-			printf("\n\n\n");
+			end = clock();
+			time = ((double)end -start) / CLOCKS_PER_SEC; //calcul execution time for block in parallel mode
+			printf("\nExecution Time  : %f \n",time);
+			printf("\n");
 			
 	}
